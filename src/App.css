@@ -1,0 +1,121 @@
+#root {
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+@media (min-width: 1600px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+  }
+}
+
+/* Full width container for flex layout */
+.full-width-container {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Force Power Platform to use full width */
+[data-powerappsid], 
+.powerapps-content,
+.powerapps-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  box-sizing: border-box;
+}
+
+.App {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+.App h1 {
+  margin-bottom: 1.5rem;
+  text-align: center;
+  color: #323130;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #root {
+    padding: 0.5rem;
+  }
+  
+  .App h1 {
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  #root {
+    padding: 0.25rem;
+  }
+  
+  .App h1 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Add Power Platform specific fixes */
+.power-platform {
+  height: 100% !important;
+  overflow: auto !important;
+}
+
+/* Adjust grid container styling for better responsiveness */
+.gridContainer {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+  gap: 1rem !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+@media (min-width: 576px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  }
+}
+
+@media (min-width: 992px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1200px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1600px) {
+  .gridContainer {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+  }
+}

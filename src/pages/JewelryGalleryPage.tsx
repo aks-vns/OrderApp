@@ -1,0 +1,664 @@
+import { useEffect, useState, useRef } from 'react';
+import { 
+  makeStyles, 
+  shorthands, 
+  Card, 
+  CardHeader, 
+  CardPreview,
+  Text,
+  Body1,
+  Caption1,
+  Button,
+  Input,
+  Label,
+  tokens,
+  Select,
+  Subtitle2,
+  Divider,
+  Checkbox,
+  Tooltip
+} from '@fluentui/react-components';
+import type { aks_designmasters } from '../generated/models/aks_designmastersModel';
+import { aks_designmastersService } from '../generated/services/aks_designmastersService';
+import jsPDF from 'jspdf';
+
+const useStyles = makeStyles({
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    maxWidth: '100%',
+    width: '100%',
+    height: '100%',
+    overflow: 'auto',
+    ...shorthands.padding('0.5rem', '0', '1rem', '0'),
+    ...shorthands.margin('0'),
+    boxSizing: 'border-box',
+    flexGrow: 1,
+  },
+  scrollableContent: {
+    flex: '1 1 auto',
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    width: '100%',
+    paddingBottom: '2rem',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  filterContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'end',
+    ...shorthands.gap('1rem'),
+    ...shorthands.margin('0', '0', '1rem', '0'),
+  },
+  filterItem: {
+    minWidth: '200px',
+    maxWidth: '300px',
+    '@media (max-width: 768px)': {
+      minWidth: '100%',
+      maxWidth: '100%',
+      marginBottom: '0.5rem',
+    },
+  },
+  gridContainer: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+    ...shorthands.gap('1rem'),
+    width: '100%',
+    margin: '0',
+    padding: '0',
+    '@media (min-width: 576px)': {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+    },
+    '@media (min-width: 768px)': {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+    },
+    '@media (min-width: 992px)': {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+    },
+    '@media (min-width: 1200px)': {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+    },
+    '@media (min-width: 1600px)': {
+      gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+    },
+    '@media (max-width: 480px)': {
+      gridTemplateColumns: '1fr',
+    },
+  },
+  card: {
+    maxWidth: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    transition: 'transform 0.2s, box-shadow 0.2s',
+    position: 'relative',
+    ':hover': {
+      transform: 'translateY(-4px)',
+      boxShadow: tokens.shadow16,
+    },
+  },
+  cardCheckbox: {
+    position: 'absolute',
+    top: '0.5rem',
+    right: '0.5rem',
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    borderRadius: '50%',
+    padding: '0.25rem',
+  },
+  pdfButton: {
+    marginTop: '1rem',
+    marginBottom: '1rem',
+  },
+  actionsContainer: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem',
+  },
+  cardHeader: {
+    marginBottom: '.5rem',
+  },
+  preview: {
+    minHeight: '150px',
+    maxHeight: '220px',
+    objectFit: 'cover',
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
+    backgroundColor: tokens.colorNeutralBackground2,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+    '@media (min-width: 1600px)': {
+      minHeight: '180px',
+      maxHeight: '250px',
+    },
+    '@media (max-width: 768px)': {
+      minHeight: '140px',
+      maxHeight: '200px',
+    },
+    '@media (max-width: 480px)': {
+      minHeight: '130px',
+      maxHeight: '180px',
+    },
+  },
+  detailsContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    ...shorthands.gap('.15rem'),
+    ...shorthands.padding('0.35rem'),
+    flexGrow: 1,
+  },
+  imageStyle: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  detailItem: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  detailLabel: {
+    fontWeight: '600',
+    color: tokens.colorNeutralForeground3,
+  },
+  detailValue: {
+    textAlign: 'right',
+    fontWeight: '400',
+  },
+  loadingContainer: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '4rem',
+  },
+  errorContainer: {
+    ...shorthands.padding('1rem'),
+    color: tokens.colorPaletteRedForeground1,
+    backgroundColor: tokens.colorPaletteRedBackground1,
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
+    marginBottom: '1rem',
+  }
+});
+
+export const JewelryGalleryPage = () => {
+  const styles = useStyles();
+  const [designs, setDesigns] = useState<aks_designmasters[]>([]);
+  const [filteredDesigns, setFilteredDesigns] = useState<aks_designmasters[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [supplierFilter, setSupplierFilter] = useState<string>('');
+  const [selectedDesigns, setSelectedDesigns] = useState<Set<string>>(new Set());
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
+
+  // Get unique categories for filter dropdown
+  const categories = [...new Set(designs.map(design => design.aks_itemname))];
+  const suppliers = [...new Set(designs.map(design => design.aks_supplieridname).filter(Boolean))];
+
+  useEffect(() => {
+    const fetchDesigns = async () => {
+      try {
+        const response = await aks_designmastersService.getAll({
+          select: [
+            'aks_designmasterid',
+            'aks_designno',
+            'aks_supplierid',
+            'aks_supplieridname',
+            'aks_parentdesign',
+            'aks_itemname',
+            'aks_designcode',
+            'aks_designimage_url'
+          ]
+        });
+        
+        if (response.data) {
+          setDesigns(response.data);
+          setFilteredDesigns(response.data);
+        } else if (response.error) {
+          setError(response.error.message);
+        } else {
+          setError('No designs found');
+        }
+      } catch (err) {
+        console.error('Error fetching designs:', err);
+        setError('Failed to load design masters');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDesigns();
+  }, []);
+
+  // Apply filters when filter values change
+  useEffect(() => {
+    let result = designs;
+    
+    if (categoryFilter) {
+      result = result.filter(design => design.aks_itemname === categoryFilter);
+    }
+    
+    if (supplierFilter) {
+      result = result.filter(design => design.aks_supplieridname === supplierFilter);
+    }
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(design => 
+        design.aks_designno?.toLowerCase().includes(query) ||
+        design.aks_parentdesign?.toLowerCase().includes(query) ||
+        design.aks_designcode?.toLowerCase().includes(query)
+      );
+    }
+    
+    setFilteredDesigns(result);
+  }, [categoryFilter, searchQuery, supplierFilter, designs]);
+
+  const handleClearFilters = () => {
+    setCategoryFilter('');
+    setSearchQuery('');
+    setSupplierFilter('');
+  };
+
+  const toggleDesignSelection = (designId: string) => {
+    setSelectedDesigns(prevSelected => {
+      const newSelected = new Set(prevSelected);
+      if (newSelected.has(designId)) {
+        newSelected.delete(designId);
+      } else {
+        newSelected.add(designId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDesigns.size === filteredDesigns.length) {
+      // Deselect all if all are currently selected
+      setSelectedDesigns(new Set());
+    } else {
+      // Select all filtered designs
+      const allIds = filteredDesigns.map(design => design.aks_designmasterid).filter(Boolean) as string[];
+      setSelectedDesigns(new Set(allIds));
+    }
+  };
+
+  const generatePDF = async () => {
+    if (selectedDesigns.size === 0) {
+      alert('Please select at least one design');
+      return;
+    }
+
+    setGeneratingPdf(true);
+
+    try {
+      // Create new PDF document - using portrait orientation
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      // Filter designs to only include selected ones
+      const selectedDesignsArray = filteredDesigns.filter(
+        design => design.aks_designmasterid && selectedDesigns.has(design.aks_designmasterid)
+      );
+
+      // Define layout dimensions for two-column format
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const margin = 10;
+      const colWidth = (pageWidth - margin * 3) / 2; // Width of each column
+      
+      // Fixed layout to always fit 6 designs per page (3 per column)
+      const footerSpace = 15; // Space for footer from bottom of page
+      const availableHeight = pageHeight - margin - footerSpace; // Available height for content
+      const cardVerticalSpacing = 5; // Reduced spacing between cards vertically
+      
+      // Calculate card height to fit exactly 3 cards per column with spacing
+      const designHeight = (availableHeight - (2 * cardVerticalSpacing)) / 3;
+      
+      const cardPadding = 4; // Internal padding of each card
+      
+      // Always 6 designs per page (3 designs per column, 2 columns)
+      const designsPerPage = 6;
+      
+      // Generate pages with 6 designs per page
+      const totalPages = Math.ceil(selectedDesignsArray.length / designsPerPage);
+      
+      // Add a light gray background fill function
+      const drawCardBackground = (x: number, y: number, width: number, height: number, radius: number) => {
+        // Draw rounded rectangle with border
+        pdf.setDrawColor(180, 180, 180); // Light gray border
+        pdf.setFillColor(252, 252, 252); // Very light gray background
+        pdf.setLineWidth(0.5);
+        
+        // Draw rounded rectangle
+        pdf.roundedRect(x, y, width, height, radius, radius, 'FD'); // Fill and Draw
+      };
+      
+      // Draw divider line
+      const drawDividerLine = (x: number, y: number, width: number) => {
+        pdf.setDrawColor(220, 220, 220); // Light gray line
+        pdf.setLineWidth(0.2);
+        pdf.line(x, y, x + width, y);
+      };
+
+      for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+        // Only add a new page after the first page
+        if (pageIndex > 0) {
+          pdf.addPage();
+        }
+        
+        // Process designs for this page - always 6 designs per page
+        for (let i = 0; i < designsPerPage; i++) {
+          const designIndex = pageIndex * designsPerPage + i;
+          
+          // Break if we've processed all designs
+          if (designIndex >= selectedDesignsArray.length) break;
+          
+          const design = selectedDesignsArray[designIndex];
+          
+          // Determine position (left or right column)
+          const isRightColumn = i >= 3; // Fixed value since we always have 3 designs per column
+          const xPos = isRightColumn ? margin * 2 + colWidth : margin;
+          
+          // Calculate vertical position with more space between cards
+          // and ensure it doesn't get too close to the bottom margin
+          const yPos = margin + (i % 3) * (designHeight + cardVerticalSpacing); // Use consistent spacing between cards (3 per column)
+          
+          // Draw the card background with rounded corners
+          drawCardBackground(xPos, yPos, colWidth, designHeight, 3);
+          
+          // Design details - top section header
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(50, 50, 50); // Dark gray for titles
+          pdf.text(`Design: ${design.aks_designno || 'Unknown'}`, xPos + cardPadding, yPos + cardPadding + 4);
+          
+          // Draw divider after the header - extend across the whole card width for cleaner look
+          drawDividerLine(xPos + 2, yPos + cardPadding + 6, colWidth - 4);
+          
+          // Set up for the design info section
+          pdf.setFontSize(8);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(80, 80, 80); // Medium gray for regular text
+          
+          // Calculate image area - optimize for smaller card height
+          const imageAreaX = xPos + cardPadding;
+          const imageAreaY = yPos + cardPadding + 10; // Below header
+          const imageAreaWidth = colWidth - (cardPadding * 2);
+          const imageAreaHeight = designHeight - 40; // Dynamically calculate image area based on card height
+          
+          // If there's an image URL, try to add it to the PDF
+          if (design.aks_designimage_url) {
+            try {
+              // Create an image element to load the image
+              const img = new Image();
+              img.crossOrigin = "Anonymous";  // Handle CORS if needed
+              
+              // Wait for the image to load
+              await new Promise((resolve, reject) => {
+                img.onload = resolve;
+                img.onerror = reject;
+                img.src = design.aks_designimage_url || '';
+              });
+
+              // Calculate dimensions to fit the image in the image area
+              let imgWidth = imageAreaWidth;
+              let imgHeight = (img.height * imgWidth) / img.width;
+              
+              // If height exceeds max, scale down further
+              if (imgHeight > imageAreaHeight) {
+                imgHeight = imageAreaHeight;
+                imgWidth = (img.width * imgHeight) / img.height;
+              }
+              
+              // Center the image in the image area
+              const imgX = imageAreaX + (imageAreaWidth - imgWidth) / 2;
+              const imgY = imageAreaY + (imageAreaHeight - imgHeight) / 2;
+              
+              // Add the image to the PDF
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              ctx?.drawImage(img, 0, 0);
+              const imgData = canvas.toDataURL('image/jpeg');
+              
+              pdf.addImage(imgData, 'JPEG', imgX, imgY, imgWidth, imgHeight);
+            } catch (error) {
+              console.error('Error loading image for PDF:', error);
+              pdf.text('Image could not be loaded', imageAreaX, imageAreaY + 10);
+            }
+          } else {
+            pdf.text('No image available', imageAreaX, imageAreaY + 10);
+          }
+          
+          // Draw divider after the image - extend across the whole card width
+          drawDividerLine(xPos + 2, imageAreaY + imageAreaHeight + 2, colWidth - 4);
+          
+          // Design details section (below image)
+          const detailsY = imageAreaY + imageAreaHeight + 6; // Position below image + divider
+          
+          // Two-column layout for details (similar to the sample image)
+          const labelX = xPos + cardPadding + 2;
+          const valueX = labelX + 40; // Position values directly after labels
+          
+          // Design specification rows
+          const addDetailRow = (label: string, value: string, rowIndex: number) => {
+            // Label in regular weight, aligned left
+            pdf.setFont("helvetica", "normal");
+            pdf.setTextColor(90, 90, 90); // Darker gray for labels
+            pdf.text(label, labelX, detailsY + (rowIndex * 5));
+            
+            // Value in regular weight, aligned left after label
+            pdf.setTextColor(0, 0, 0); // Black for values
+            pdf.text(value, valueX, detailsY + (rowIndex * 5));
+          };
+          
+          addDetailRow('Category:', design.aks_itemname || 'Unknown', 0);
+          addDetailRow('Design Code:', design.aks_designcode || 'Unknown', 1);
+          addDetailRow('Supplier:', design.aks_supplieridname || 'Unknown', 2);
+        }
+        
+        // Add footer to each page with clear separation from content
+        const today = new Date().toLocaleDateString();
+        
+        // Add a more visible separator line above the footer
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(0.3);
+        pdf.line(margin, pageHeight - footerSpace + 2, pageWidth - margin, pageHeight - footerSpace + 2);
+        
+        // Add footer text below the line
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(80, 80, 80); // Darker gray for better visibility
+        pdf.text(`Generated on: ${today} | Total designs: ${selectedDesignsArray.length}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      }
+
+      // Save PDF
+      pdf.save(`jewelry-designs-${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('There was an error generating the PDF. Please try again.');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Text size={400}>Loading designs...</Text>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.errorContainer}>
+          <Text weight="semibold">Error</Text>
+          <Text>{error}</Text>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      <Subtitle2 block as="h2">Jewelry Design Gallery</Subtitle2>
+      <Divider />
+      
+      {/* Filter controls */}
+      <div className={styles.filterContainer}>
+        <div className={styles.filterItem}>
+          <Label htmlFor="category-filter">Category</Label>
+          <Select
+            id="category-filter"
+            value={categoryFilter}
+            onChange={(_e, data) => setCategoryFilter(data.value)}
+          >
+            <option value="">All Categories</option>
+            {categories.map((category, index) => (
+              <option key={index} value={category}>{category}</option>
+            ))}
+          </Select>
+        </div>
+        
+        <div className={styles.filterItem}>
+          <Label htmlFor="supplier-filter">Supplier</Label>
+          <Select
+            id="supplier-filter"
+            value={supplierFilter}
+            onChange={(_e, data) => setSupplierFilter(data.value)}
+          >
+            <option value="">All Suppliers</option>
+            {suppliers.map((supplier, index) => (
+              <option key={index} value={supplier}>{supplier}</option>
+            ))}
+          </Select>
+        </div>
+        
+        <div className={styles.filterItem}>
+          <Label htmlFor="search-input">Search</Label>
+          <Input 
+            id="search-input"
+            value={searchQuery}
+            onChange={(_e, data) => setSearchQuery(data.value)}
+            placeholder="Search by Design No, Code..."
+          />
+        </div>
+        
+        <div>
+          <Button appearance="secondary" onClick={handleClearFilters}>
+            Clear Filters
+          </Button>
+        </div>
+      </div>
+      
+      {/* Actions and Selection Container */}
+      <div className={styles.actionsContainer}>
+        <Body1 block>
+          Showing {filteredDesigns.length} of {designs.length} designs
+        </Body1>
+        
+        <div>
+          <Button 
+            appearance="primary" 
+            onClick={handleSelectAll}
+          >
+            Select All
+          </Button>
+          
+          {selectedDesigns.size > 0 && (
+            <Button 
+              appearance="secondary" 
+              onClick={() => setSelectedDesigns(new Set())}
+              style={{ marginLeft: '8px' }}
+            >
+              Deselect All
+            </Button>
+          )}
+          
+          <Tooltip content="Generate PDF of selected designs" relationship="label">
+            <Button 
+              appearance="primary" 
+              className={styles.pdfButton} 
+              onClick={generatePDF}
+              disabled={selectedDesigns.size === 0 || generatingPdf}
+              style={{ marginLeft: '8px' }}
+            >
+              {generatingPdf ? "Generating..." : `Generate PDF (${selectedDesigns.size})`}
+            </Button>
+          </Tooltip>
+        </div>
+      </div>
+      
+      {/* Scrollable content area */}
+      <div className={styles.scrollableContent}>
+        {/* Card Grid */}
+        <div className={`${styles.gridContainer} gridContainer`} ref={pdfContainerRef}>
+          {filteredDesigns.length === 0 ? (
+            <Text>No designs found matching your filters</Text>
+          ) : (
+            filteredDesigns.map((design) => (
+              <Card key={design.aks_designmasterid} className={styles.card}>
+                {/* Selection Checkbox */}
+                <div className={styles.cardCheckbox}>
+                  <Checkbox 
+                    checked={design.aks_designmasterid ? selectedDesigns.has(design.aks_designmasterid) : false}
+                    onChange={() => design.aks_designmasterid && toggleDesignSelection(design.aks_designmasterid)}
+                    aria-label={`Select ${design.aks_designno}`}
+                  />
+                </div>
+                
+                <CardHeader 
+                  className={styles.cardHeader}
+                  header={<Text weight="semibold">{design.aks_designno}</Text>} 
+                  description={<Caption1>{design.aks_itemname}</Caption1>}
+                />
+                
+                <CardPreview className={styles.preview}>
+                  {design.aks_designimage_url ? (
+                    <img 
+                      src={design.aks_designimage_url} 
+                      alt={`${design.aks_designno} design`}
+                      className={styles.imageStyle}
+                    />
+                  ) : (
+                    <Text>No Image Available</Text>
+                  )}
+                </CardPreview>
+                
+                <div className={styles.detailsContainer}>
+                  <div className={styles.detailItem}>
+                    <Text className={styles.detailLabel}>Design Code:</Text>
+                    <Text className={styles.detailValue}>{design.aks_designcode || '-'}</Text>
+                  </div>
+                  
+                  <div className={styles.detailItem}>
+                    <Text className={styles.detailLabel}>Supplier:</Text>
+                    <Text className={styles.detailValue}>{design.aks_supplieridname || '-'}</Text>
+                  </div>
+                  
+                  <div className={styles.detailItem}>
+                    <Text className={styles.detailLabel}>Parent Design:</Text>
+                    <Text className={styles.detailValue}>{design.aks_parentdesign || '-'}</Text>
+                  </div>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

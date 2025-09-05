@@ -1,0 +1,12 @@
+{
+  "appId": "",
+  "appDisplayName": "OrderManagement",
+  "description": null,
+  "environmentId": "90316b5b-cd20-e743-91dc-98f72f9363d8",
+  "buildPath": "./dist",
+  "buildEntryPoint": "index.html",
+  "logoPath": "Default",
+  "localAppUrl": "http://localhost:3000/",
+  "connectionReferences": {},
+  "databaseReferences": {}
+}

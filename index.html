@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Management - Design Gallery</title>
+    <script>
+      // Power Platform ready signal
+      window.powerAppsReady = function() {
+        console.log('Power Platform ready function called');
+        if (window.parent && window.parent !== window) {
+          window.parent.postMessage({
+            type: 'app-ready',
+            source: 'power-code-app'
+          }, '*');
+        }
+      };
+      
+      // Suppress Copilot status errors for local development
+      window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('copilotStatus')) {
+          console.log('Suppressed Copilot status error (expected in local development)');
+          e.preventDefault();
+          return false;
+        }
+      });
+      
+      // Send ready signal when DOM loads
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          if (window.powerAppsReady) {
+            window.powerAppsReady();
+          }
+        }, 500);
+      });
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
