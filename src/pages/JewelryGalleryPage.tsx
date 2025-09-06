@@ -747,3 +747,5 @@ export const JewelryGalleryPage = () => {
     </div>
   );
 };
+ 
+ 
