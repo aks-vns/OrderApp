@@ -18,6 +18,7 @@ import {
   Checkbox,
   Tooltip
 } from '@fluentui/react-components';
+import { DismissRegular } from '@fluentui/react-icons';
 import type { aks_designmasters } from '../generated/models/aks_designmastersModel';
 import { aks_designmastersService } from '../generated/services/aks_designmastersService';
 import jsPDF from 'jspdf';
@@ -181,6 +182,38 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorPaletteRedBackground1,
     ...shorthands.borderRadius(tokens.borderRadiusMedium),
     marginBottom: '1rem',
+  },
+  appliedFiltersContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    ...shorthands.gap('0.5rem'),
+    marginBottom: '1rem',
+  },
+  filterTag: {
+    display: 'flex',
+    alignItems: 'center',
+    ...shorthands.gap('0.25rem'),
+    ...shorthands.padding('0.25rem', '0.5rem'),
+    ...shorthands.borderRadius(tokens.borderRadiusMedium),
+    backgroundColor: tokens.colorNeutralBackground3,
+    maxWidth: '300px',
+  },
+  filterTagText: {
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
+  filterTagIcon: {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: '0.25rem',
+    ':hover': {
+      color: tokens.colorPaletteRedForeground1,
+    }
   }
 });
 
@@ -264,6 +297,18 @@ export const JewelryGalleryPage = () => {
     setCategoryFilter('');
     setSearchQuery('');
     setSupplierFilter('');
+  };
+
+  const handleRemoveCategoryFilter = () => {
+    setCategoryFilter('');
+  };
+
+  const handleRemoveSupplierFilter = () => {
+    setSupplierFilter('');
+  };
+
+  const handleRemoveSearchFilter = () => {
+    setSearchQuery('');
   };
 
   const toggleDesignSelection = (designId: string) => {
@@ -563,6 +608,46 @@ export const JewelryGalleryPage = () => {
           </Button>
         </div>
       </div>
+      
+      {/* Applied filters tags */}
+      {(categoryFilter || supplierFilter || searchQuery) && (
+        <div className={styles.appliedFiltersContainer}>
+          <Text>Applied filters:</Text>
+          
+          {categoryFilter && (
+            <Tooltip content="Remove category filter" relationship="label">
+              <div className={styles.filterTag}>
+                <Text className={styles.filterTagText}>Category: {categoryFilter}</Text>
+                <span className={styles.filterTagIcon} onClick={handleRemoveCategoryFilter}>
+                  <DismissRegular />
+                </span>
+              </div>
+            </Tooltip>
+          )}
+          
+          {supplierFilter && (
+            <Tooltip content="Remove supplier filter" relationship="label">
+              <div className={styles.filterTag}>
+                <Text className={styles.filterTagText}>Supplier: {supplierFilter}</Text>
+                <span className={styles.filterTagIcon} onClick={handleRemoveSupplierFilter}>
+                  <DismissRegular />
+                </span>
+              </div>
+            </Tooltip>
+          )}
+          
+          {searchQuery && (
+            <Tooltip content="Remove search filter" relationship="label">
+              <div className={styles.filterTag}>
+                <Text className={styles.filterTagText}>Search: {searchQuery}</Text>
+                <span className={styles.filterTagIcon} onClick={handleRemoveSearchFilter}>
+                  <DismissRegular />
+                </span>
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      )}
       
       {/* Actions and Selection Container */}
       <div className={styles.actionsContainer}>
