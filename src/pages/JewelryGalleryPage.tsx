@@ -16,9 +16,16 @@ import {
   Subtitle2,
   Divider,
   Checkbox,
-  Tooltip
+  Tooltip,
+  Dialog,
+  DialogTrigger,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogContent,
+  DialogActions
 } from '@fluentui/react-components';
-import { DismissRegular } from '@fluentui/react-icons';
+import { DismissRegular, CheckmarkCircleFilled } from '@fluentui/react-icons';
 import type { aks_designmasters } from '../generated/models/aks_designmastersModel';
 import { aks_designmastersService } from '../generated/services/aks_designmastersService';
 import jsPDF from 'jspdf';
@@ -228,6 +235,8 @@ export const JewelryGalleryPage = () => {
   const [supplierFilter, setSupplierFilter] = useState<string>('');
   const [selectedDesigns, setSelectedDesigns] = useState<Set<string>>(new Set());
   const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfSuccessDialogOpen, setPdfSuccessDialogOpen] = useState(false);
+  const [pdfGeneratedCount, setPdfGeneratedCount] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
   // Get unique categories for filter dropdown
@@ -530,6 +539,10 @@ export const JewelryGalleryPage = () => {
 
       // Save PDF
       pdf.save(`jewelry-designs-${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`);
+      
+      // Show success dialog with the count of designs
+      setPdfGeneratedCount(selectedDesignsArray.length);
+      setPdfSuccessDialogOpen(true);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('There was an error generating the PDF. Please try again.');
@@ -744,6 +757,34 @@ export const JewelryGalleryPage = () => {
           )}
         </div>
       </div>
+      
+      {/* PDF Success Dialog */}
+      <Dialog 
+        open={pdfSuccessDialogOpen} 
+        onOpenChange={(_e, data) => setPdfSuccessDialogOpen(data.open)}
+      >
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>
+              PDF Generated Successfully
+            </DialogTitle>
+            <DialogContent>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                <CheckmarkCircleFilled style={{ color: tokens.colorPaletteGreenForeground1, fontSize: '24px' }} />
+                <Text size={400} weight="semibold">Your PDF has been downloaded successfully!</Text>
+              </div>
+              <Text>
+                A total of <strong>{pdfGeneratedCount}</strong> design{pdfGeneratedCount !== 1 ? 's' : ''} {pdfGeneratedCount !== 1 ? 'have' : 'has'} been included in the PDF.
+              </Text>
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="primary" onClick={() => setPdfSuccessDialogOpen(false)}>
+                OK
+              </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
     </div>
   );
 };
