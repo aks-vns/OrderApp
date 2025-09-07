@@ -94,6 +94,11 @@ export default function PowerProvider({ children }: PowerProviderProps) {
                     [data-powerappsid] {
                         max-width: 100% !important;
                     }
+                    
+                    /* Ensure that the image quality remains the same in all themes */
+                    img {
+                        filter: none !important;
+                    }
                 `;
                 document.head.appendChild(styleTag);
                 

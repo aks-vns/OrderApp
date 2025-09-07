@@ -18,7 +18,6 @@ import {
   Checkbox,
   Tooltip,
   Dialog,
-  DialogTrigger,
   DialogSurface,
   DialogTitle,
   DialogBody,

@@ -42,13 +42,23 @@
   overflow-y: auto;
   max-width: 100%;
   box-sizing: border-box;
-  padding: 0;
+  padding: 1rem;
 }
 
 .App h1 {
   margin-bottom: 1.5rem;
-  text-align: center;
-  color: #323130;
+  text-align: left;
+}
+
+/* Theme toggle styles */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  user-select: none;
 }
 
 /* Responsive adjustments */
