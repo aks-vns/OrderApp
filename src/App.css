@@ -138,3 +138,29 @@ html, body {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
   }
 }
+
+/* Jewelry design checkbox overrides - remove gray circles */
+.jewelry-design-checkbox .fui-Checkbox__input {
+  background-color: transparent !important;
+}
+
+/* Remove the gray circle background from checkboxes */
+.fui-FluentProvider[data-theme='webLight'] .jewelry-design-checkbox,
+.fui-FluentProvider[data-theme='webDark'] .jewelry-design-checkbox {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+/* Make checkboxes a bit larger and more visible */
+.jewelry-design-checkbox .fui-Checkbox__input {
+  width: 18px !important;
+  height: 18px !important;
+  border-width: 2px !important;
+}
+
+/* Ensure checkbox text is not displayed */
+.jewelry-design-checkbox .fui-Checkbox__label {
+  display: none !important;
+}

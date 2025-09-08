@@ -28,6 +28,7 @@ import { DismissRegular, CheckmarkCircleFilled } from '@fluentui/react-icons';
 import type { aks_designmasters } from '../generated/models/aks_designmastersModel';
 import { aks_designmastersService } from '../generated/services/aks_designmastersService';
 import jsPDF from 'jspdf';
+import './JewelryGalleryStyles.css';
 
 const useStyles = makeStyles({
   container: {
@@ -111,9 +112,12 @@ const useStyles = makeStyles({
     top: '0.5rem',
     right: '0.5rem',
     zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: '50%',
     padding: '0.25rem',
+    transition: 'all 0.2s ease-in-out',
+    transform: 'scale(1.2)',
+    ':hover': {
+      transform: 'scale(1.25)',
+    },
   },
   pdfButton: {
     marginTop: '1rem',
@@ -714,6 +718,7 @@ export const JewelryGalleryPage = () => {
                     checked={design.aks_designmasterid ? selectedDesigns.has(design.aks_designmasterid) : false}
                     onChange={() => design.aks_designmasterid && toggleDesignSelection(design.aks_designmasterid)}
                     aria-label={`Select ${design.aks_designno}`}
+                    className="jewelry-design-checkbox"
                   />
                 </div>
                 

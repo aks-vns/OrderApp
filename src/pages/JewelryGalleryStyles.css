@@ -1,0 +1,59 @@
+/* Enhanced checkbox styling for design selection */
+.fui-Checkbox {
+  transform: scale(1.2);
+}
+
+.fui-Checkbox__input {
+  border-width: 2px !important;
+}
+
+/* Light mode checkbox */
+.fui-FluentProvider[data-theme='webLight'] .fui-Checkbox__input {
+  border-color: #0078d4 !important;
+  background-color: white !important;
+}
+
+.fui-FluentProvider[data-theme='webLight'] .fui-Checkbox__input:hover {
+  border-color: #005a9e !important;
+  background-color: white !important;
+}
+
+.fui-FluentProvider[data-theme='webLight'] .fui-Checkbox__input:checked {
+  background-color: #0078d4 !important;
+  border-color: #0078d4 !important;
+}
+
+/* Dark mode checkbox */
+.fui-FluentProvider[data-theme='webDark'] .fui-Checkbox__input {
+  border-color: #4cc2ff !important; /* Bright blue for dark mode */
+  background-color: transparent !important;
+}
+
+.fui-FluentProvider[data-theme='webDark'] .fui-Checkbox__input:hover {
+  border-color: #74d1ff !important;
+  background-color: rgba(76, 194, 255, 0.1) !important;
+}
+
+.fui-FluentProvider[data-theme='webDark'] .fui-Checkbox__input:checked {
+  background-color: #4cc2ff !important; /* Bright blue for dark mode */
+  border-color: #4cc2ff !important;
+}
+
+/* Checkbox indicator (checkmark) */
+.fui-Checkbox__indicator {
+  color: white !important;
+  font-weight: bold !important;
+}
+
+/* Make checkmark more visible in dark mode */
+.fui-FluentProvider[data-theme='webDark'] .fui-Checkbox__indicator {
+  color: #121212 !important; 
+}
+
+/* Override any other styling that might be causing the gray circle */
+.cardCheckbox, .design-checkbox {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
