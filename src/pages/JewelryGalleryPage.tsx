@@ -752,7 +752,7 @@ export const JewelryGalleryPage = () => {
                       alt={`${design.aks_designno} design`}
                       className={styles.imageStyle}
                       style={{ cursor: 'pointer' }}
-                      onClick={() => handleImageClick(design.aks_designimage_url, design.aks_designno)}
+                      onClick={() => handleImageClick(design.aks_designimage_url ?? null, design.aks_designno ?? null)}
                     />
                   ) : (
                     <Text>No Image Available</Text>
