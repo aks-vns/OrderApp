@@ -242,6 +242,23 @@ export const JewelryGalleryPage = () => {
   const [pdfGeneratedCount, setPdfGeneratedCount] = useState(0);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
 
+  // Image popup state
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupImageUrl, setPopupImageUrl] = useState<string | null>(null);
+  const [popupDesignNo, setPopupDesignNo] = useState<string | null>(null);
+  const handleImageClick = (imgUrl: string | null, designNo?: string | null) => {
+    if (imgUrl) {
+      setPopupImageUrl(imgUrl);
+      setPopupDesignNo(designNo || null);
+      setPopupOpen(true);
+    }
+  };
+  const handlePopupClose = () => {
+    setPopupOpen(false);
+    setPopupImageUrl(null);
+    setPopupDesignNo(null);
+  };
+
   // Get unique categories for filter dropdown
   const categories = [...new Set(designs.map(design => design.aks_itemname))];
   const suppliers = [...new Set(designs.map(design => design.aks_supplieridname).filter(Boolean))];
@@ -734,6 +751,8 @@ export const JewelryGalleryPage = () => {
                       src={design.aks_designimage_url} 
                       alt={`${design.aks_designno} design`}
                       className={styles.imageStyle}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => handleImageClick(design.aks_designimage_url, design.aks_designno)}
                     />
                   ) : (
                     <Text>No Image Available</Text>
@@ -785,6 +804,25 @@ export const JewelryGalleryPage = () => {
               <Button appearance="primary" onClick={() => setPdfSuccessDialogOpen(false)}>
                 OK
               </Button>
+            </DialogActions>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+
+      {/* Image Popup Dialog */}
+      <Dialog open={popupOpen} onOpenChange={(_e, data) => { if (!data.open) handlePopupClose(); }}>
+        <DialogSurface>
+          <DialogBody>
+            <DialogTitle>{popupDesignNo ? popupDesignNo : "Design Image"}</DialogTitle>
+            <DialogContent>
+              {popupImageUrl && (
+                <div style={{ width: 400, height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
+                  <img src={popupImageUrl} alt="Design" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                </div>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button appearance="primary" onClick={handlePopupClose}>Close</Button>
             </DialogActions>
           </DialogBody>
         </DialogSurface>
