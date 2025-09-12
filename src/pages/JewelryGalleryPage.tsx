@@ -12,7 +12,6 @@ import {
   Input,
   Label,
   tokens,
-  Select,
   Subtitle2,
   Divider,
   Checkbox,
@@ -22,9 +21,13 @@ import {
   DialogTitle,
   DialogBody,
   DialogContent,
-  DialogActions
+  DialogActions,
+  DrawerBody,
+  DrawerHeader,
+  Drawer,
+  DrawerFooter
 } from '@fluentui/react-components';
-import { DismissRegular, CheckmarkCircleFilled } from '@fluentui/react-icons';
+import { FilterRegular, ArrowUpRegular, DismissRegular, CheckmarkCircleFilled } from '@fluentui/react-icons';
 import type { aks_designmasters } from '../generated/models/aks_designmastersModel';
 import { aks_designmastersService } from '../generated/services/aks_designmastersService';
 import jsPDF from 'jspdf';
@@ -53,12 +56,97 @@ const useStyles = makeStyles({
     flexDirection: 'column',
   },
   filterContainer: {
+    display: 'none',
+    '@media (min-width: 1024px)': {
+      display: 'block',
+      width: '280px',
+      flex: '0 0 280px',
+      position: 'sticky',
+      top: '1rem',
+      alignSelf: 'flex-start',
+    }
+  },
+  layoutWrapper: {
     display: 'flex',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'end',
-    ...shorthands.gap('1rem'),
-    ...shorthands.margin('0', '0', '1rem', '0'),
+    gap: '1rem',
+    width: '100%',
+    boxSizing: 'border-box',
+  },
+  sidebar: {
+    display: 'none',
+    '@media (min-width: 1024px)': {
+      display: 'block',
+      width: '280px',
+      flex: '0 0 280px',
+    }
+  },
+  mainContent: {
+    flex: '1 1 auto',
+  },
+  modernFilterButton: {
+    position: 'relative',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: tokens.colorNeutralBackground3,
+    color: tokens.colorNeutralForeground1,
+    borderRadius: '24px',
+    border: 'none',
+    padding: '10px 18px',
+    boxShadow: tokens.shadow4,
+    marginBottom: '1rem',
+    cursor: 'pointer',
+    fontWeight: 600,
+    fontSize: '16px',
+    transition: 'background 0.2s',
+    ':hover': {
+      background: tokens.colorNeutralBackground2,
+    },
+    '@media (min-width: 1024px)': {
+      display: 'none',
+    },
+  },
+  floatingArrow: {
+    position: 'fixed',
+    right: '32px',
+    bottom: '32px',
+    zIndex: 100,
+    background: 'rgba(128,128,128,0.85)',
+    borderRadius: '50%',
+    width: '48px',
+    height: '48px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: tokens.shadow16,
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+  },
+  filterButtonMobile: {
+    display: 'none',
+    '@media (max-width: 600px)': {
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: tokens.colorPaletteRedBackground1,
+      color: tokens.colorNeutralForegroundOnBrand,
+      borderRadius: '8px',
+      border: 'none',
+      padding: '8px',
+      boxShadow: tokens.shadow4,
+      marginBottom: '1rem',
+      cursor: 'pointer',
+      transition: 'background 0.2s',
+      ':hover': {
+        background: tokens.colorPaletteRedBackground2,
+      },
+    },
+  },
+  drawerFilterContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+    padding: '1rem',
   },
   filterItem: {
     minWidth: '200px',
@@ -228,6 +316,18 @@ const useStyles = makeStyles({
 });
 
 export const JewelryGalleryPage = () => {
+  // ...existing code...
+  const [showArrow, setShowArrow] = useState(false);
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowArrow(window.scrollY > 200);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const styles = useStyles();
   const [designs, setDesigns] = useState<aks_designmasters[]>([]);
   const [filteredDesigns, setFilteredDesigns] = useState<aks_designmasters[]>([]);
@@ -236,6 +336,7 @@ export const JewelryGalleryPage = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [supplierFilter, setSupplierFilter] = useState<string>('');
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
   const [selectedDesigns, setSelectedDesigns] = useState<Set<string>>(new Set());
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [pdfSuccessDialogOpen, setPdfSuccessDialogOpen] = useState(false);
@@ -260,8 +361,6 @@ export const JewelryGalleryPage = () => {
   };
 
   // Get unique categories for filter dropdown
-  const categories = [...new Set(designs.map(design => design.aks_itemname))];
-  const suppliers = [...new Set(designs.map(design => design.aks_supplieridname).filter(Boolean))];
 
   useEffect(() => {
     const fetchDesigns = async () => {
@@ -595,53 +694,157 @@ export const JewelryGalleryPage = () => {
       <Subtitle2 block as="h2">Jewelry Design Gallery</Subtitle2>
       <Divider />
       
-      {/* Filter controls */}
-      <div className={styles.filterContainer}>
-        <div className={styles.filterItem}>
-          <Label htmlFor="category-filter">Category</Label>
-          <Select
-            id="category-filter"
-            value={categoryFilter}
-            onChange={(_e, data) => setCategoryFilter(data.value)}
-          >
-            <option value="">All Categories</option>
-            {categories.map((category, index) => (
-              <option key={index} value={category}>{category}</option>
-            ))}
-          </Select>
+      {/* Modern filter button (desktop & mobile) */}
+      <button className={styles.modernFilterButton} onClick={() => setFilterDrawerOpen(true)}>
+        <FilterRegular style={{ fontSize: 22, marginRight: 8 }} />
+        Filter
+      </button>
+  {/* Desktop fixed sidebar (visible on large screens) */}
+  <div className={styles.layoutWrapper}>
+  <aside className={styles.sidebar} aria-label="Filters">
+        <div style={{ padding: '1rem' }}>
+          <Text weight="semibold" size={400}>Filters</Text>
+          <div className={styles.drawerFilterContainer} style={{ marginTop: 12 }}>
+            <Label>Metal</Label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <Input type="number" min={0} max={100000} placeholder="0" style={{ width: 80 }} />
+              <Input type="number" min={0} max={100000} placeholder="100000" style={{ width: 80 }} />
+            </div>
+            <Label>Diamond</Label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <Input type="number" min={0} max={100000} placeholder="0" style={{ width: 80 }} />
+              <Input type="number" min={0} max={100000} placeholder="100000" style={{ width: 80 }} />
+            </div>
+            <Button appearance="primary" style={{ width: 120, marginBottom: 16 }}>FILTER</Button>
+            <Label style={{ marginTop: 16, fontWeight: 600 }}>Category</Label>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Array.from(new Set(designs.map((d: aks_designmasters) => d.aks_itemname))).map((category) => {
+                if (!category) return null;
+                const count = designs.filter((d: aks_designmasters) => d.aks_itemname === category).length;
+                const isSelected = categoryFilter === category;
+                return (
+                  <li key={category} style={{ marginBottom: 4 }}>
+                    <Button
+                      appearance={isSelected ? 'primary' : 'secondary'}
+                      onClick={() => setCategoryFilter(isSelected ? '' : category)}
+                      style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center', fontWeight: isSelected ? 700 : 400 }}
+                    >
+                      <span>{category}</span>
+                      <span style={{ color: '#888' }}>({count})</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <Label style={{ marginTop: 16, fontWeight: 600 }}>Supplier</Label>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Array.from(new Set(designs.map((d: aks_designmasters) => d.aks_supplieridname).filter(Boolean))).map((supplier) => {
+                if (!supplier) return null;
+                const count = designs.filter((d: aks_designmasters) => d.aks_supplieridname === supplier).length;
+                const isSelected = supplierFilter === supplier;
+                return (
+                  <li key={supplier as string} style={{ marginBottom: 4 }}>
+                    <Button
+                      appearance={isSelected ? 'primary' : 'secondary'}
+                      onClick={() => setSupplierFilter(isSelected ? '' : supplier as string)}
+                      style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center', fontWeight: isSelected ? 700 : 400 }}
+                    >
+                      <span>{supplier as string}</span>
+                      <span style={{ color: '#888' }}>({count})</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
-        
-        <div className={styles.filterItem}>
-          <Label htmlFor="supplier-filter">Supplier</Label>
-          <Select
-            id="supplier-filter"
-            value={supplierFilter}
-            onChange={(_e, data) => setSupplierFilter(data.value)}
-          >
-            <option value="">All Suppliers</option>
-            {suppliers.map((supplier, index) => (
-              <option key={index} value={supplier}>{supplier}</option>
-            ))}
-          </Select>
-        </div>
-        
-        <div className={styles.filterItem}>
-          <Label htmlFor="search-input">Search</Label>
-          <Input 
-            id="search-input"
-            value={searchQuery}
-            onChange={(_e, data) => setSearchQuery(data.value)}
-            placeholder="Search by Design No, Code..."
-          />
-        </div>
-        
-        <div>
-          <Button appearance="secondary" onClick={handleClearFilters}>
+      </aside>
+
+    {/* Main content (keeps Drawer inside for mobile) */}
+    <div className={styles.mainContent}>
+    {/* Modern filter drawer/modal (used on mobile/tablet) */}
+    <Drawer open={filterDrawerOpen} position="start" onOpenChange={(_e, data) => setFilterDrawerOpen(data.open)}>
+        <DrawerHeader>
+          <Text weight="semibold" size={400}>Filters</Text>
+        </DrawerHeader>
+        <DrawerBody>
+          <div className={styles.drawerFilterContainer}>
+            {/* Metal and Diamond Range Inputs */}
+            <Label>Metal</Label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <Input type="number" min={0} max={100000} placeholder="0" style={{ width: 80 }} />
+              <Input type="number" min={0} max={100000} placeholder="100000" style={{ width: 80 }} />
+            </div>
+            <Label>Diamond</Label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <Input type="number" min={0} max={100000} placeholder="0" style={{ width: 80 }} />
+              <Input type="number" min={0} max={100000} placeholder="100000" style={{ width: 80 }} />
+            </div>
+            <Button appearance="primary" style={{ width: 120, marginBottom: 16 }}>FILTER</Button>
+            {/* Category Section */}
+            <Label style={{ marginTop: 16, fontWeight: 600 }}>Category</Label>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Array.from(new Set(designs.map((d: aks_designmasters) => d.aks_itemname))).map((category) => {
+                if (!category) return null;
+                const count = designs.filter((d: aks_designmasters) => d.aks_itemname === category).length;
+                const isSelected = categoryFilter === category;
+                return (
+                  <li key={category} style={{ marginBottom: 4 }}>
+                    <Button
+                      appearance={isSelected ? 'primary' : 'secondary'}
+                      onClick={() => setCategoryFilter(isSelected ? '' : category)}
+                      style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center', fontWeight: isSelected ? 700 : 400 }}
+                    >
+                      <span>{category}</span>
+                      <span style={{ color: '#888' }}>({count})</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            {/* Supplier Section */}
+            <Label style={{ marginTop: 16, fontWeight: 600 }}>Supplier</Label>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Array.from(new Set(designs.map((d: aks_designmasters) => d.aks_supplieridname).filter(Boolean))).map((supplier) => {
+                if (!supplier) return null;
+                const count = designs.filter((d: aks_designmasters) => d.aks_supplieridname === supplier).length;
+                const isSelected = supplierFilter === supplier;
+                return (
+                  <li key={supplier as string} style={{ marginBottom: 4 }}>
+                    <Button
+                      appearance={isSelected ? 'primary' : 'secondary'}
+                      onClick={() => setSupplierFilter(isSelected ? '' : supplier as string)}
+                      style={{ width: '100%', justifyContent: 'space-between', display: 'flex', alignItems: 'center', fontWeight: isSelected ? 700 : 400 }}
+                    >
+                      <span>{supplier as string}</span>
+                      <span style={{ color: '#888' }}>({count})</span>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </DrawerBody>
+        <DrawerFooter>
+          <Button appearance="secondary" onClick={handleClearFilters} style={{ marginRight: 8 }}>
             Clear Filters
           </Button>
-        </div>
-      </div>
-      
+          <Button appearance="primary" onClick={() => setFilterDrawerOpen(false)}>
+            Apply
+          </Button>
+        </DrawerFooter>
+      </Drawer>
+      {/* Floating scroll-to-top arrow */}
+      {showArrow && (
+        <Tooltip content="Go to top" relationship="label">
+          <div className={styles.floatingArrow} onClick={scrollToTop} aria-label="Scroll to top">
+            <ArrowUpRegular style={{ fontSize: 32, color: '#fff' }} />
+          </div>
+        </Tooltip>
+      )}
+
       {/* Applied filters tags */}
       {(categoryFilter || supplierFilter || searchQuery) && (
         <div className={styles.appliedFiltersContainer}>
@@ -759,22 +962,7 @@ export const JewelryGalleryPage = () => {
                   )}
                 </CardPreview>
                 
-                <div className={styles.detailsContainer}>
-                  <div className={styles.detailItem}>
-                    <Text className={styles.detailLabel}>Design Code:</Text>
-                    <Text className={styles.detailValue}>{design.aks_designcode || '-'}</Text>
-                  </div>
-                  
-                  <div className={styles.detailItem}>
-                    <Text className={styles.detailLabel}>Supplier:</Text>
-                    <Text className={styles.detailValue}>{design.aks_supplieridname || '-'}</Text>
-                  </div>
-                  
-                  <div className={styles.detailItem}>
-                    <Text className={styles.detailLabel}>Parent Design:</Text>
-                    <Text className={styles.detailValue}>{design.aks_parentdesign || '-'}</Text>
-                  </div>
-                </div>
+                {/* Only show Design No and Product Name above image; no extra metadata here */}
               </Card>
             ))
           )}
@@ -816,9 +1004,24 @@ export const JewelryGalleryPage = () => {
             <DialogTitle>{popupDesignNo ? popupDesignNo : "Design Image"}</DialogTitle>
             <DialogContent>
               {popupImageUrl && (
-                <div style={{ width: 400, height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: 8, overflow: 'hidden' }}>
+                <div style={{ width: 400, height: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: 8, overflow: 'hidden', marginBottom: 16 }}>
                   <img src={popupImageUrl} alt="Design" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                 </div>
+              )}
+              {/* Show full metadata below image in popup */}
+              {popupDesignNo && (
+                (() => {
+                  const design = designs.find(d => d.aks_designno === popupDesignNo);
+                  if (!design) return null;
+                  return (
+                    <div style={{ marginTop: 8 }}>
+                      <div><Text weight="semibold">Product Name:</Text> <Text>{design.aks_itemname || '-'}</Text></div>
+                      <div><Text weight="semibold">Design Code:</Text> <Text>{design.aks_designcode || '-'}</Text></div>
+                      <div><Text weight="semibold">Supplier:</Text> <Text>{design.aks_supplieridname || '-'}</Text></div>
+                      <div><Text weight="semibold">Parent Design:</Text> <Text>{design.aks_parentdesign || '-'}</Text></div>
+                    </div>
+                  );
+                })()
               )}
             </DialogContent>
             <DialogActions>
@@ -827,6 +1030,8 @@ export const JewelryGalleryPage = () => {
           </DialogBody>
         </DialogSurface>
       </Dialog>
+    </div>
+    </div>
     </div>
   );
 };
